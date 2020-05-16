@@ -4,6 +4,14 @@ import pandas as pd
 import urllib
 import os
 
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import seaborn as sns
+import plotly.express as px
+
 
 def main():
     # Render the readme as markdown using st.markdown.
@@ -12,54 +20,24 @@ def main():
     # Once we have the dependencies, add a selector for the app mode on the sidebar.
     st.sidebar.title("What to do")
     app_mode = st.sidebar.selectbox("Choose the app mode",
-        ["Show instructions", "Run the app", "Show the source code"])
+        ["Show instructions", "Explaintory Data Analysis", "Show the source code"])
     if app_mode == "Show instructions":
-        st.sidebar.success('To continue select "Run the app".')
+        st.sidebar.success('To continue select "Explaintory Data Analysis".')
     elif app_mode == "Show the source code":
         readme_text.empty()
         st.code(get_file_content_as_string("main.py"))
-    elif app_mode == "Run the app":
+    elif app_mode == "Explaintory Data Analysis":
         readme_text.empty()
         run_the_app()
 
 
 def get_file_content_as_string(path):
-    url = 'https://raw.githubusercontent.com/dapraxis/IMLdepressionData/dataset/master/' + path
+    
+    url = 'https://raw.githubusercontent.com/DaPraxis/IMLdepressionData/master/' + path
     response = urllib.request.urlopen(url)
     return response.read().decode("utf-8")
 
-# def frame_selector_ui(summary):
-#     st.sidebar.markdown("# Frame")
-
-#     # The user can pick which type of object to search for.
-#     object_type = st.sidebar.selectbox("Search for which objects?", summary.columns, 2)
-
-#     # The user can select a range for how many of the selected objecgt should be present.
-#     min_elts, max_elts = st.sidebar.slider("How many %ss (select a range)?" % object_type, 0, 25, [10, 20])
-#     selected_frames = get_selected_frames(summary, object_type, min_elts, max_elts)
-#     if len(selected_frames) < 1:
-#         return None, None
-
-#     # Choose a frame out of the selected frames.
-#     selected_frame_index = st.sidebar.slider("Choose a frame (index)", 0, len(selected_frames) - 1, 0)
-
-#     # Draw an altair chart in the sidebar with information on the frame.
-#     objects_per_frame = summary.loc[selected_frames, object_type].reset_index(drop=True).reset_index()
-#     chart = alt.Chart(objects_per_frame, height=120).mark_area().encode(
-#         alt.X("index:Q", scale=alt.Scale(nice=False)),
-#         alt.Y("%s:Q" % object_type))
-#     selected_frame_df = pd.DataFrame({"selected_frame": [selected_frame_index]})
-#     vline = alt.Chart(selected_frame_df).mark_rule(color="red").encode(
-#         alt.X("selected_frame:Q", axis=None)
-#     )
-#     st.sidebar.altair_chart(alt.layer(chart, vline))
-
-#     selected_frame = selected_frames[selected_frame_index]
-#     return selected_frame_index, selected_frame
-
 def run_the_app():
-    # To make Streamlit fast, st.cache allows us to reuse computation across runs.
-    # In this common pattern, we download data from an endpoint only once.
     @st.cache
     def load_metadata(url):
         return pd.read_csv(url)
@@ -85,6 +63,13 @@ def run_the_app():
         #reset indices and show dataframe
         df = df.reset_index(drop=True)
 
+        for i in range(len(df)):
+            label = df.loc[i,'DRUG']
+            if label == 'DuloxetineDuloxetine':
+                df.loc[i,'DRUG'] = 'Duloxetine'
+            if label == 'VenlafaxVenlafax':
+                df.loc[i,'DRUG'] = 'Venlafax'
+        df = df[(df.DRUG!='VenlafaxPlacebo')&(df.DRUG!='DuloxetinePlacebo')&(df.DRUG!='EscitalopramPlacebo')].reset_index()
         df_first = df[df.columns[df.columns.str.contains('FHAMD')]]
         df_last = df[df.columns[df.columns.str.contains('LHAMD')]]
         diff = df_last.values - df_first.values
@@ -101,22 +86,88 @@ def run_the_app():
         finaldf['DRUG'] = df['DRUG']
         return finaldf
 
-    # An amazing property of st.cached functions is that you can pipe them into
-    # one another to form a computation DAG (directed acyclic graph). Streamlit
-    # recomputes only whatever subset is required to get the right answer!
-    def file_selector(folder_path='.'):
+
+    def file_selector(folder_path='./dataset/'):
         filenames = os.listdir(folder_path)
         selected_filename = st.selectbox('Select a file to load data', filenames)
         return os.path.join(folder_path, selected_filename)
-
+    
+    st.title('EDA')
+    st.header('Data Loading')
     filename = file_selector()
-
     st.write('You selected `%s`' % filename)
 
     metadata = load_metadata(filename)
     summary = create_summary(metadata)
-    summary
-    
+    showData = st.checkbox('Show raw data')
+    if(showData): 
+        summary
+
+    desc = {
+    'DHAMD1':'DEPRESSED MOOD',
+    'DHAMD2':'FEELINGS OF GUILT',
+    'DHAMD3':'SUICIDE',
+    'DHAMD4':'INSOMNIA: EARLY IN THE NIGHT',
+    'DHAMD5':'INSOMNIA: MIDDLE OF THE NIGHT',
+    'DHAMD6':'INSOMNIA: EARLY HOURS OF THE MORNING',
+    'DHAMD7':'WORK AND ACTIVITIES',
+    'DHAMD8':'RETARDATION',
+    'DHAMD9':'AGITATION',
+    'DHAMD10':'ANXIETY PSYCHIC',
+    'DHAMD11':'ANXIETY SOMATIC ',
+    'DHAMD12':'SOMATIC SYMPTOMS GASTRO-INTESTINAL',
+    'DHAMD13':'GENERAL SOMATIC SYMPTOMS',
+    'DHAMD14':'GENITAL SYMPTOMS',
+    'DHAMD15':'HYPOCHONDRIASIS',
+    'DHAMD16':'LOSS OF WEIGHT',
+    'DHAMD17':'INSIGHT'}
+
+    select_from = summary.columns[summary.columns.str.contains('DHAMD')]
+    copy = []
+    for i, j in enumerate(select_from):
+        copy.append( j+': '+desc[j])
+
+
+    st.header('Data Cluster Presentation')
+    check = st.checkbox('Show Scatters')
+    hamd = st.sidebar.multiselect('HAMD to invistigate',copy)
+    drug = st.sidebar.multiselect('Treatment/Experiment group to compare with', summary.DRUG.unique())
+    visual = st.sidebar.selectbox('Cluster Visualization Method', ['PCA', 't-SNE'])
+    dimension = st.sidebar.selectbox('Dimension for view', ['3D', '2D'])
+    df = summary.copy()
+    feat_cols = list(map(lambda x: x.split(':')[0], hamd))
+    in_scope_drug = list(map(lambda x: x.split(':')[0], drug))
+    df = df[pd.DataFrame(df.DRUG.tolist()).isin(in_scope_drug).any(1)]
+    # df = df.loc[df.DRUG in in_scope_drug]
+    if(len(in_scope_drug)<1 or len(feat_cols)<2):
+        st.write('At least with **3 dimensions** and **1 drugs!**')
+    if (dimension == '3D' and len(in_scope_drug)>=1 and len(feat_cols)>=2):
+        if(visual=='PCA'):
+            model = PCA(n_components=3)
+            result = model.fit_transform(df[feat_cols].values)
+            st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
+        else:
+            model = TSNE(n_components=3, verbose=0, perplexity=40, n_iter=300)
+            result = model.fit_transform(df[feat_cols].values)
+        df['D1'] = result[:,0]
+        df['D2'] = result[:,1] 
+        df['D3'] = result[:,2]
+        fig = px.scatter_3d(df, x='D1', y='D2', z='D3', color='DRUG')
+        if(check):
+            st.plotly_chart(fig, use_container_width=True)
+    elif (dimension == '2D' and len(in_scope_drug)>=1 and len(feat_cols)>=2):
+        if(visual=='PCA'):
+            model = PCA(n_components=2)
+            result = model.fit_transform(df[feat_cols].values)
+            st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
+        else:
+            model = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300)
+            result = model.fit_transform(df[feat_cols].values)
+        df['D1'] = result[:,0]
+        df['D2'] = result[:,1] 
+        fig = px.scatter(df, x="D1", y="D2", color="DRUG")
+        if(check):
+            st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
