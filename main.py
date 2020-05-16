@@ -92,35 +92,6 @@ def run_the_app():
         selected_filename = st.selectbox('Select a file to load data', filenames)
         return os.path.join(folder_path, selected_filename)
 
-    # @st.cache(suppress_st_warning=True)
-    def scatter_cluster3D(visual, df):
-        if(visual=='PCA'):
-            model = PCA(n_components=3)
-            result = model.fit_transform(df[feat_cols].values)
-            st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
-        else:
-            model = TSNE(n_components=3, verbose=0, perplexity=40, n_iter=300)
-            result = model.fit_transform(df[feat_cols].values)
-        df['D1'] = result[:,0]
-        df['D2'] = result[:,1] 
-        df['D3'] = result[:,2]
-        fig = px.scatter_3d(df, x='D1', y='D2', z='D3', color='DRUG')
-        st.plotly_chart(fig, use_container_width=True)
-    
-    # @st.cache(suppress_st_warning=True)
-    def scatter_cluster2D(visual, df):
-        if(visual=='PCA'):
-            model = PCA(n_components=2)
-            result = model.fit_transform(df[feat_cols].values)
-            st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
-        else:
-            model = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300)
-            result = model.fit_transform(df[feat_cols].values)
-        df['D1'] = result[:,0]
-        df['D2'] = result[:,1] 
-        fig = px.scatter(df, x="D1", y="D2", color="DRUG")
-        st.plotly_chart(fig, use_container_width=True)
-
     st.title('EDA')
     st.header('Data Loading')
     filename = file_selector()
@@ -128,9 +99,9 @@ def run_the_app():
 
     metadata = load_metadata(filename)
     summary = create_summary(metadata)
-    showData = st.checkbox('Show raw data')
-    if(showData): 
-        summary
+    # showData = st.checkbox('Show raw data')
+    # if(showData): 
+    #     summary
 
     desc = {
     'DHAMD1':'DEPRESSED MOOD',
@@ -157,49 +128,104 @@ def run_the_app():
         copy.append( j+': '+desc[j])
 
 
-    st.header('Data Cluster Presentation')
-    check = st.checkbox('Show Scatters')
-    hamd = st.sidebar.multiselect('HAMD to invistigate',copy)
-    drug = st.sidebar.multiselect('Treatment/Experiment group to compare with', summary.DRUG.unique())
-    visual = st.sidebar.selectbox('Cluster Visualization Method', ['PCA', 't-SNE'])
-    dimension = st.sidebar.selectbox('Dimension for view', ['3D', '2D'])
-    
-    df = summary.copy()
-    feat_cols = list(map(lambda x: x.split(':')[0], hamd))
-    in_scope_drug = list(map(lambda x: x.split(':')[0], drug))
-    df = df[pd.DataFrame(df.DRUG.tolist()).isin(in_scope_drug).any(1)]
-    # df = df.loc[df.DRUG in in_scope_drug]
+    st.header('Data Presentation')
+    allMethods = ['Data Clustering', 'Density Plot']
+    method = st.selectbox('Select Visualization', allMethods)
 
-    if(len(in_scope_drug)<1 or len(feat_cols)<3):
-        st.error('At least with **3 dimensions** and **1 drugs!**')
-    else:
-        if(not check):
-            if(dimension=='3D' and visual=='t-SNE'):
-                st.warning('approximately takes {}s'.format(len(hamd)*4+len(drug)*2))
-            elif(dimension=='2D' and visual=='t-SNE'):
-                st.warning('approximately takes {}s'.format(len(hamd)+len(drug)*2))
-            elif(dimension=='3D' and visual=='PCA'):
-                st.warning('approximately takes 5s')
-            elif(dimension=='2D' and visual=='PCA'):
-                st.warning('approximately takes 2s')
-    if (dimension == '3D' and len(in_scope_drug)>=1 and len(feat_cols)>=3 and check):
-        scatter_cluster3D(visual, df)
-    elif (dimension == '2D' and len(in_scope_drug)>=1 and len(feat_cols)>=3 and check):
-        scatter_cluster2D(visual, df)
+    def cluster():
+        st.header('Data Clustering Visualization')
+        check = st.checkbox('Show Scatters')
+        hamd = st.sidebar.multiselect('HAMD to invistigate',copy)
+        drug = st.sidebar.multiselect('Treatment/Experiment group to compare with', summary.DRUG.unique())
+        visual = st.sidebar.selectbox('Cluster Visualization Method', ['PCA', 't-SNE'])
+        dimension = st.sidebar.selectbox('Dimension for view', ['3D', '2D'])
+        df = summary.copy()
+        feat_cols = list(map(lambda x: x.split(':')[0], hamd))
+        in_scope_drug = list(map(lambda x: x.split(':')[0], drug))
+        df = df[pd.DataFrame(df.DRUG.tolist()).isin(in_scope_drug).any(1)]
+        # df = df.loc[df.DRUG in in_scope_drug]
 
-    st.header('Data Density Pair Plots')
-    checkPair = st.checkbox('Show Pair Plots')
-    pair_feature = feat_cols.copy()
-    pair_feature.append('DRUG')
-    if(len(in_scope_drug)>0 and len(feat_cols)>0):
-        if checkPair:
-            state = [len(drug), len(hamd)]
-            g = sns.pairplot(df[pair_feature], hue="DRUG")
-            st.pyplot()
+        # @st.cache(hash_funcs={px.scatter_3d: (feat_cols, visual, in_scope_drug)},suppress_st_warning=True)
+        def scatter_cluster3D(visual, df, feat_cols, in_scope_drug):
+            if(visual=='PCA'):
+                model = PCA(n_components=3)
+                result = model.fit_transform(df[feat_cols].values)
+                st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
+            else:
+                model = TSNE(n_components=3, verbose=0, perplexity=40, n_iter=300)
+                result = model.fit_transform(df[feat_cols].values)
+            df['D1'] = result[:,0]
+            df['D2'] = result[:,1] 
+            df['D3'] = result[:,2]
+            fig = px.scatter_3d(df, x='D1', y='D2', z='D3', color='DRUG')
+            st.plotly_chart(fig, use_container_width=True)
+            return fig
+        
+        # @st.cache(suppress_st_warning=True)
+        def scatter_cluster2D(visual, df, feat_cols, in_scope_drug):
+            if(visual=='PCA'):
+                model = PCA(n_components=2)
+                result = model.fit_transform(df[feat_cols].values)
+                st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
+            else:
+                model = TSNE(n_components=2, verbose=0, perplexity=40, n_iter=300)
+                result = model.fit_transform(df[feat_cols].values)
+            df['D1'] = result[:,0]
+            df['D2'] = result[:,1] 
+            fig = px.scatter(df, x="D1", y="D2", color="DRUG")
+            st.plotly_chart(fig, use_container_width=True)
+            return fig
+
+        if(len(in_scope_drug)<1 or len(feat_cols)<3):
+            st.error('At least with **3 dimensions** and **1 drugs!**')
         else:
-            st.warning('approximately takes {}s'.format(len(hamd)*2+len(drug)))
-    else:
-        st.error('At least with **1 dimension** and **1 drug!**')
+            if(not check):
+                if(dimension=='3D' and visual=='t-SNE'):
+                    st.warning('approximately takes {}s to {}s'.format(len(hamd)*4+len(drug)*2, len(hamd)*8+len(drug)*4))
+                elif(dimension=='2D' and visual=='t-SNE'):
+                    st.warning('approximately takes {}s to {}s'.format(len(hamd)+len(drug)*2, len(hamd)*2+len(drug)*4))
+                elif(dimension=='3D' and visual=='PCA'):
+                    st.warning('approximately takes 5s')
+                elif(dimension=='2D' and visual=='PCA'):
+                    st.warning('approximately takes 2s')
+        if (dimension == '3D' and len(in_scope_drug)>=1 and len(feat_cols)>=3 and check):
+            fig = scatter_cluster3D(visual, df, feat_cols, in_scope_drug)
+        elif (dimension == '2D' and len(in_scope_drug)>=1 and len(feat_cols)>=3 and check):
+            fig = scatter_cluster2D(visual, df, feat_cols, in_scope_drug)
+        return 
+
+    def pairPlot():
+        hamd = st.sidebar.multiselect('HAMD to invistigate',copy)
+        drug = st.sidebar.multiselect('Treatment/Experiment group to compare with', summary.DRUG.unique())
+        df = summary.copy()
+        feat_cols = list(map(lambda x: x.split(':')[0], hamd))
+        in_scope_drug = list(map(lambda x: x.split(':')[0], drug))
+        df = df[pd.DataFrame(df.DRUG.tolist()).isin(in_scope_drug).any(1)]
+        st.header('Data Density Pair Plots')
+        checkPair = st.checkbox('Show Pair Plots')
+        pair_feature = feat_cols.copy()
+        pair_feature.append('DRUG')
+        if(len(in_scope_drug)>0 and len(feat_cols)>0):
+            if checkPair:
+                state = [len(drug), len(hamd)]
+                g = sns.pairplot(df[pair_feature], hue="DRUG")
+                st.pyplot()
+            else:
+                st.warning('approximately takes {}s'.format(len(hamd)*2+len(drug)))
+        else:
+            st.error('At least with **1 dimension** and **1 drug!**')
+        return
+    
+    def selectMethods(arg):
+        switcher = {
+            'Data Clustering': cluster,
+            'Density Plot': pairPlot
+        }
+        func = switcher.get(arg, lambda: "Invalid Method")
+        func()
+    
+    selectMethods(method)
+
 
 if __name__ == "__main__":
     main()
