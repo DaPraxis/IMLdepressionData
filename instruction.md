@@ -4,6 +4,10 @@ This project demonstrates the *** Visualization of Data for Anti-depression with
 
 The source is [DaPraxis Area](https://github.com/DaPraxis/IMLdepressionData) and illustrates all the major building blocks of Streamlit.
 
+![alt text][logo]
+
+[logo]: https://github.com/DaPraxis/IMLdepressionData/raw/master/front.png "Data Visualization"
+
 👈 **Please select _Run the App_ in the sidebar to start.**
 
 ### Questions? Comments?
