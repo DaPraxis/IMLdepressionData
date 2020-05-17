@@ -5,15 +5,6 @@ This project demonstrates the *** Visualization of Data for Anti-depression with
 The source is [DaPraxis Area](https://github.com/DaPraxis/IMLdepressionData)
 
 Author: [Haoyan Jiang](https://github.com/DaPraxis)
+
 Institute: [Interactive Media Lab](https://imedia.mie.utoronto.ca/)
 
-
-![alt text][logo]
-
-[logo]: https://github.com/DaPraxis/IMLdepressionData/raw/master/front.png "Data Visualization"
-
-👈 **Please select _Explaintory Data Analysis_ in the sidebar to start.**
-
-### Questions? Comments?
-
-Please ask in the [Streamlit community](https://discuss.streamlit.io).
