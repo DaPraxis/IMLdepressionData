@@ -14,7 +14,8 @@ from dataloading_process import get_file_content_as_string, load_metadata, creat
 
 
 def run_the_app():
-    st.title('EDA')
+    st.title('Unsupervised Learning for HAM-D Scores vs. Drugs')
+    st.markdown('👈 This sections, we only learns from [***the Hamilton Depression Rating Scale (HAM-D)***](https://www.mdcalc.com/hamilton-depression-rating-scale-ham-d) attributes')
     st.header('Data Loading')
     filename = file_selector()
     st.write('You selected `%s`' % filename)

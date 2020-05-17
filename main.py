@@ -2,7 +2,7 @@ import streamlit as st
 
 from run_the_app import run_the_app
 from dataloading_process import get_file_content_as_string
-from cluster_learn import cluster_learn
+from eda_analysis import eda
 
 
 def main():
@@ -21,9 +21,11 @@ def main():
         st.code(get_file_content_as_string("main.py"))
     elif app_mode == "Explaintory Data Analysis":
         readme_text.empty()
-        run_the_app()
+        eda()
     elif app_mode == 'Unsupervised Learning':
-        cluster_learn()
+        readme_text.empty()
+        run_the_app()
+
 
 
 if __name__ == "__main__":
