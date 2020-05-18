@@ -82,6 +82,7 @@ def individual(df, label1, label2):
     ci_up = pd.Series([])
     ci_lo = pd.Series([])
     ci = pd.Series([])
+    sig_2 = pd.Series([])
     drug = df.loc[df['DRUG']!=0]
     placebo = df.loc[df['DRUG']==0]
     
@@ -94,8 +95,9 @@ def individual(df, label1, label2):
         std_N1N2 = sqrt( ((N1 - 1)*(std1)**2 + (N2 - 1)*(std2)**2) / d_f)
         diff_mean = drug[drug.columns[i]].mean() - placebo[placebo.columns[i]].mean()
         MoE = t.ppf(0.975, d_f) * std_N1N2 * sqrt(1/N1 + 1/N2)
-        ci_up[i] = (diff_mean + MoE)
-        ci_lo[i] = (diff_mean - MoE)
+        ci_up[i] = diff_mean + MoE
+        ci_lo[i] = diff_mean - MoE
+        sig_2[i] = ((diff_mean + MoE) * (diff_mean - MoE)>0)
         ci[i] = (diff_mean - MoE, diff_mean + MoE)
         tset, pval = ttest_1samp(df_w.Weightings, df_w.Weightings[i])
         sig = ttest_ind(drug[drug.columns[i]], placebo[placebo.columns[i]], equal_var = False)
@@ -106,10 +108,11 @@ def individual(df, label1, label2):
     df_w.insert(5, '2-sample t-test ci', ci)
     df_w.insert(6, '2-sample t-test ci upper', ci_up)
     df_w.insert(7, '2-sample t-test ci lower', ci_lo)
-    # df_w['Significant'] = df_w['p-value'] <=0.05
+    df_w.insert(8, 'Significant', sig_2)
     return (df_w, df)
 
 def overall_test(df):
+    color = st.sidebar.selectbox('Colored By', ['Significant', 'Description', 'Polarity'])
     tests = [
         [['Duloxetine'], ['Placebo']],
         [['Fluoxetine'], ['Placebo']],
@@ -136,7 +139,7 @@ def overall_test(df):
                     animation_frame="level_0",
                     orientation='h',
                     range_x=[-0.5, 0.5],
-                    color="HAMD_Name",
+                    color=color,
                     hover_name="Description",
                     hover_data=["2-sample t-test p-value", "weightings p-value", '2-sample t-test ci'],
                     error_x = '2-sample t-test ci upper',
@@ -149,16 +152,18 @@ def overall_test(df):
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     title_text='LDA Hamilton Weightings',
-                    showlegend=False)
+                    showlegend=True)
         title = 'Anti-Depression Drugs Overview'
         fig.update_xaxes(title_text=title)
         fig.update_yaxes(title_text='')
+        
         st.plotly_chart(fig, use_container_width=True)
     return
 
 def custom_test(df):
     g1 = st.sidebar.multiselect('Group1', df.DRUG.unique().tolist())
     g2 = st.sidebar.multiselect('Group2', df.DRUG.unique().tolist())
+    color = st.sidebar.selectbox('Colored By', ['Significant','Polarity', 'Description'])
     if(len(g1)<1 or len(g2)<1):
         st.error('At least two groups to compare')
     else:
@@ -172,7 +177,7 @@ def custom_test(df):
                         # animation_frame="level_0",
                         orientation='h',
                         range_x=[-0.5, 0.5],
-                        color="Description",
+                        color=color,
                         hover_name="Description",
                         hover_data=["2-sample t-test p-value", "weightings p-value", '2-sample t-test ci'],
                         error_x = '2-sample t-test ci upper',
@@ -184,7 +189,7 @@ def custom_test(df):
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
                         title_text='LDA Hamilton Weightings',
-                        showlegend=False)
+                        showlegend=True)
             title = 'Anti-Depression Drugs'
             for i in g1:
                 title+=' '+i
