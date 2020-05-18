@@ -8,12 +8,12 @@ def get_file_content_as_string(path):
     response = urllib.request.urlopen(url)
     return response.read().decode("utf-8")
 
-@st.cache
+# @st.cache
 def load_metadata(url):
     return pd.read_csv(url)
 
 # This function uses some Pandas magic to summarize the metadata Dataframe.
-@st.cache
+# @st.cache
 def create_summary(metadata):
     df = metadata[['FHAMD1', 'FHAMD2', 'FHAMD3', 'FHAMD4', 'FHAMD5','FHAMD6', 'FHAMD7', 'FHAMD8', 'FHAMD9', 'FHAMD10', 
         'FHAMD11', 'FHAMD12', 'FHAMD13', 'FHAMD14', 'FHAMD15', 'FHAMD16', 'FHAMD17','LHAMD1', 'LHAMD2', 'LHAMD3', 

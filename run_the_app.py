@@ -149,8 +149,8 @@ def run_the_app():
         return
 
     def lda():
-        df = summary.copy()
-        lda_test(df)
+        # df = summary.copy()
+        lda_test(summary)
     
     def selectMethods(arg):
         switcher = {
