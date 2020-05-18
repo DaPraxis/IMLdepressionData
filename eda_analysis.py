@@ -90,7 +90,7 @@ def eda():
         func()
 
     def ms_over():
-        ranges = st.sidebar.slider('Range of Features to View', 0.0, 100.0, (0.0, 45.0))
+        ranges = st.sidebar.slider('Range of Features to View', 0.0, 100.0, (0.0, 25.0))
         cols_with_nans = nans.index.tolist()
         col_ranges = cols_with_nans[int(len(cols_with_nans)*ranges[0]/100):int(len(cols_with_nans)*ranges[1]/100)]
         df_select = df[col_ranges]

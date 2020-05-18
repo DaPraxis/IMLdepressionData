@@ -11,6 +11,8 @@ import plotly.express as px
 
 from dataloading_process import get_file_content_as_string, load_metadata, create_summary, file_selector
 
+from lda_test import lda_test
+
 
 
 def run_the_app():
@@ -49,7 +51,7 @@ def run_the_app():
 
 
     st.header('Data Visualization')
-    allMethods = ['Data Clustering', 'Density Plot']
+    allMethods = ['Clustering Visualization', 'LDA Analysis', 'Density Plot']
     method = st.selectbox('Select Visualization', allMethods)
 
     def cluster():
@@ -145,11 +147,16 @@ def run_the_app():
         else:
             st.error('At least with **1 dimension** and **1 drug!**')
         return
+
+    def lda():
+        df = summary.copy()
+        lda_test(df)
     
     def selectMethods(arg):
         switcher = {
-            'Data Clustering': cluster,
-            'Density Plot': pairPlot
+            'Clustering Visualization': cluster,
+            'Density Plot': pairPlot,
+            'LDA Analysis': lda
         }
         func = switcher.get(arg, lambda: "Invalid Method")
         func()
