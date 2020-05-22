@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 
+from umap import UMAP
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -59,7 +60,7 @@ def run_the_app():
         check = st.checkbox('Show Scatters')
         hamd = st.sidebar.multiselect('HAMD to invistigate',copy)
         drug = st.sidebar.multiselect('Treatment/Experiment group to compare with', summary.DRUG.unique())
-        visual = st.sidebar.selectbox('Cluster Visualization Method', ['PCA', 't-SNE'])
+        visual = st.sidebar.selectbox('Cluster Visualization Method', ['PCA', 't-SNE', 'U-MAP'])
         if(visual=='t-SNE'):
             perplexity = st.sidebar.slider('Select Perplexity for t-SNE (number of nearest neighbors)', 5.0, 70.0, 10.0)
             iters = st.sidebar.slider('Select Number of Training Iterations for t-SNE', 250, 2000, 1000)
@@ -78,6 +79,11 @@ def run_the_app():
                 model = PCA(n_components=3)
                 result = model.fit_transform(df[feat_cols].values)
                 st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
+            elif(visual=='U-MAP'):
+                n_n = st.sidebar.slider("Number of nearst neighbors", 2, 200, 20)
+                min_dist = st.sidebar.slider('Cluster Tightness', 0.0, 1.0, 0.1)
+                model = UMAP(n_neighbors = n_n, min_dist = min_dist, n_components = 3, verbose = True)
+                result = model.fit_transform(df[feat_cols].values)
             else:
                 model = TSNE(n_components=3, verbose=1, perplexity=perplexity, n_iter = iters, learning_rate = lr, init=init)
                 result = model.fit_transform(df[feat_cols].values)
@@ -94,6 +100,11 @@ def run_the_app():
                 model = PCA(n_components=2)
                 result = model.fit_transform(df[feat_cols].values)
                 st.write('Explained variation per principal component: {}'.format(model.explained_variance_ratio_))
+            elif(visual=='U-MAP'):
+                n_n = st.sidebar.slider("Number of nearst neighbors", 2, 200, 20)
+                min_dist = st.sidebar.slider('Cluster Tightness', 0.0, 1.0, 0.1)
+                model = UMAP(n_neighbors = n_n, min_dist = min_dist, n_components = 2, verbose = True)
+                result = model.fit_transform(df[feat_cols].values)
             else:
                 model = TSNE(n_components=2, verbose=1, perplexity=perplexity, n_iter = iters, learning_rate = lr, init=init)
                 # n_components=2, verbose=1, random_state=0, angle=.99, init='pca'
